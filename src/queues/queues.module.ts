@@ -10,6 +10,8 @@ import { DoctorRoomAssignment } from '../database/entities/doctor-room-assignmen
 import { AuditLog } from '../database/entities/audit-logs.entity.js';
 import { QueuesController } from './queues.controller.js';
 import { QueuesService } from './queues.service.js';
+import { User } from '../database/entities/users.entity.js';
+import { QueuesGateway } from './queues.gateway.js';
 
 
 @Module({
@@ -23,10 +25,11 @@ import { QueuesService } from './queues.service.js';
       Doctor,
       DoctorRoomAssignment,
       AuditLog,
+      User
     ]),
   ],
   controllers: [QueuesController],
-  providers: [QueuesService],
+  providers: [QueuesService, QueuesGateway],
   exports: [QueuesService],
 })
 export class QueuesModule {}

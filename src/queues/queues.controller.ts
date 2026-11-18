@@ -11,14 +11,18 @@ import {
   Patch,
   Post,
   Query,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { QueuesService } from './queues.service.js';
-import { CurrentUser, RequirePermissions } from '../common/decorators/auth.decorator.js';
+import { CurrentUser, Public, RequirePermissions } from '../common/decorators/auth.decorator.js';
 import { CancelQueueDto, DoctorCallNextDto, PatientTakeNumberDto, ReceptionCreateQueueDto, UpdatePriorityDto } from './dto/queue.dto.js';
 import { QueueStatus } from '../common/const/constant.js';
+import { ConfigService } from '@nestjs/config';
 @Controller()
 export class QueuesController {
-  constructor(private readonly queuesService: QueuesService) {}
+  constructor(private readonly queuesService: QueuesService,
+    private readonly configService: ConfigService,
+  ) {}
 
   // --- Danh mục Phòng khám (mục 9.2) ---
   @Get('rooms')
@@ -152,5 +156,27 @@ export class QueuesController {
     return this.queuesService.executeTransition(id, 'CANCEL', user, {
       cancelReason: dto.reason,
     });
+  }
+
+  // --- Màn hình Display công khai xác thực bằng X-Display-Token
+  @Public()
+  @Get('display/rooms/:roomId')
+  getDisplayRoom(
+    @Param('roomId', ParseIntPipe) roomId: number,
+    @Headers('x-display-token') displayToken?: string,
+  ) {
+    const validToken = this.configService.get<string>(
+      'DISPLAY_DEVICE_TOKEN',
+      'display_secret_token_room_tv_2026',
+    );
+
+    if (!displayToken || displayToken !== validToken) {
+      throw new UnauthorizedException({
+        code: 'INVALID_DISPLAY_TOKEN',
+        message: 'Device token của màn hình hiển thị không hợp lệ.',
+      });
+    }
+
+    return this.queuesService.getDisplayRoomData(roomId);
   }
 }

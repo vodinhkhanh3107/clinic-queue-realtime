@@ -866,11 +866,92 @@ export class QueuesService {
     }
   }
 
+  // Cache ngắn 1.5 giây cho màn hình Display
+  private displayCache = new Map<number, { data: any; expiresAt: number }>();
+
+  // ==================== 7. DISPLAY API ====================
+
+  async getDisplayRoomData(roomId: number) {
+    const now = Date.now();
+    const cached = this.displayCache.get(roomId);
+    if (cached && cached.expiresAt > now) {
+      return cached.data;
+    }
+
+    const room = await this.roomRepo.findOne({ where: { id: roomId } });
+    if (!room) {
+      throw new NotFoundException({
+        code: 'NOT_FOUND',
+        message: 'Không tìm thấy phòng khám.',
+      });
+    }
+
+    const { date: today } = getVietnamDateAndTime();
+
+    // 1. Lấy các số đang được gọi (CALLED) hoặc đang khám (IN_PROGRESS) trong phòng
+    // Phòng có nhiều bác sĩ sẽ có nhiều số đang gọi cùng lúc 
+    const callingQueues = await this.queueRepo.find({
+      where: {
+        room_id: roomId,
+        queue_date: today,
+        status: In([QueueStatus.CALLED, QueueStatus.IN_PROGRESS]),
+      },
+      order: { called_at: 'DESC', queue_sequence: 'ASC' },
+    });
+
+    // 2. Lấy tối đa 5 số kế tiếp đang chờ (WAITING) theo thứ tự ưu tiên
+    const nextQueues = await this.queueRepo.find({
+      where: {
+        room_id: roomId,
+        queue_date: today,
+        status: QueueStatus.WAITING,
+      },
+      order: { priority_rank: 'DESC', queue_sequence: 'ASC' },
+      take: 5,
+    });
+
+    // 3. Lấy lastEventId mới nhất của phòng này để Display đối chiếu chống trôi sự kiện
+    const latestEvent = await this.dataSource
+      .createQueryBuilder(QueueEvent, 'qe')
+      .innerJoin(Queue, 'q', 'q.id = qe.queue_id')
+      .where('q.room_id = :roomId AND q.queue_date = :today', { roomId, today })
+      .orderBy('qe.id', 'DESC')
+      .getOne();
+
+    // Không trả về họ tên, SĐT, ngày sinh, địa chỉ
+    const responseData = {
+      room: {
+        id: room.id,
+        roomCode: room.room_code,
+        roomName: room.room_name,
+        status: room.status,
+      },
+      calling: callingQueues.map((q) => ({
+        queueNumber: q.queue_number,
+        status: q.status,
+        calledAt: q.called_at,
+      })),
+      next: nextQueues.map((q) => ({
+        queueNumber: q.queue_number,
+        priority: q.priority,
+      })),
+      lastEventId: latestEvent ? Number(latestEvent.id) : 0,
+    };
+
+    this.displayCache.set(roomId, {
+      data: responseData,
+      expiresAt: now + 1500, // Cache 1.5 giây
+    });
+
+    return responseData;
+  }
+
   private emitRealtime(
     eventId: string,
     eventType: QueueEventType,
     queue: Queue,
   ) {
+    this.displayCache.delete(queue.room_id); // Xóa cache cũ ngay khi có thay đổi
     const payload: RealtimeQueuePayload = { eventId, eventType, queue };
     this.eventEmitter.emit('queue.state.changed', payload);
   }
