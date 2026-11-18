@@ -1,0 +1,61 @@
+export enum UserStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  LOCKED = 'LOCKED',
+}
+
+export enum StaffStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+}
+
+export enum RoomStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+}
+
+export enum Gender {
+  MALE = 'MALE',
+  FEMALE = 'FEMALE',
+  OTHER = 'OTHER',
+}
+
+export enum QueuePriority {
+  NORMAL = 'NORMAL',
+  PRIORITY = 'PRIORITY',
+  URGENT = 'URGENT',
+}
+
+export enum QueueStatus {
+  WAITING = 'WAITING',
+  CALLED = 'CALLED',
+  IN_PROGRESS = 'IN_PROGRESS',
+  COMPLETED = 'COMPLETED',
+  SKIPPED = 'SKIPPED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum QueueSource {
+  PATIENT = 'PATIENT',
+  RECEPTIONIST = 'RECEPTIONIST',
+}
+
+export enum QueueEventType {
+  TAKEN = 'TAKEN',
+  CALLED = 'CALLED',
+  RECALLED = 'RECALLED',
+  STARTED = 'STARTED',
+  COMPLETED = 'COMPLETED',
+  SKIPPED = 'SKIPPED',
+  CANCELLED = 'CANCELLED',
+}
+
+export enum AuditAction {
+  ACCOUNT_CREATED = 'ACCOUNT_CREATED',
+  PASSWORD_RESET = 'PASSWORD_RESET',
+  ACCOUNT_LOCKED = 'ACCOUNT_LOCKED',
+  ACCOUNT_UNLOCKED = 'ACCOUNT_UNLOCKED',
+  TICKET_REPRINTED = 'TICKET_REPRINTED',
+  ASSIGNMENT_CHANGED = 'ASSIGNMENT_CHANGED',
+  PRIORITY_CHANGED = 'PRIORITY_CHANGED',
+}
